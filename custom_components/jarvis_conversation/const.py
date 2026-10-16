@@ -13,6 +13,9 @@ CONF_TIMEOUT: Final = "timeout"
 CONF_FALLBACK_LOCAL: Final = "fallback_local"
 CONF_MAX_SPOKEN_CHARS: Final = "max_spoken_chars"
 
+# Deliberately empty. This value only pre-fills the URL box in the config flow, but
+# this repository is public, so a real address here would publish the gateway's host
+# and port. Type the URL at install time instead.
 DEFAULT_URL: Final = ""
 DEFAULT_MODEL: Final = "hermes-agent"
 
