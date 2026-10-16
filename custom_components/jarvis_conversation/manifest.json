@@ -1,0 +1,14 @@
+{
+  "domain": "jarvis_conversation",
+  "name": "Jarvis Conversation",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [
+    "conversation"
+  ],
+  "documentation": "https://github.com/daveys-home/jarvis-conversation",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "requirements": [],
+  "version": "0.1.2"
+}
