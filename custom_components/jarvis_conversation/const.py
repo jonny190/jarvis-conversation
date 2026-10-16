@@ -215,3 +215,33 @@ VOICE_BRIEF_PINNED_FACTS: Final = (
     "ten degrees high. Never give a _radiator_local_temperature reading as a room "
     "temperature; the room's own environment or temperature sensor is the answer."
 )
+
+# DAV-33: a SECOND pinned block, kept separate from the three above so it can be
+# judged -- or dropped -- on its own.
+#
+# WHY IT EXISTS. The 16:46 run regressed four present-tense sentences (P06, P10,
+# P13, P19) and the cause was isolated to `reasoning_effort: none`: with low
+# effort Jarvis stops hunting and asserts the data is not there, when in every
+# one of those four cases an entity plainly holds it. Removing the parameter
+# recovers all four but costs 10-37 s a turn, which the 12 s voice ceiling
+# cannot pay. So instead of buying the answer with reasoning time, this tells it
+# where to look -- exactly the mechanism that already fixed the battery
+# percentage and the warmest room.
+VOICE_BRIEF_PINNED_POWER: Final = (
+    "Four more, about power and the weather, where the entity names do not "
+    "announce themselves and looking around for them is slow. "
+    "Four: what the house is drawing right now is "
+    "sensor.house_power_draw_from_inverter, in watts. "
+    "Five: for grid versus battery, read sensor.solar_inverter_power_from_grid, "
+    "sensor.solar_inverter_battery_discharge and "
+    "sensor.solar_inverter_pv_power_array together — if the grid figure is zero "
+    "the house is running on its own solar and battery. "
+    "Six: the outdoor weather sensor is dead, so for the temperature outside use "
+    "the weather.home entity's temperature attribute rather than hunting for an "
+    "outdoor sensor. "
+    "Seven: for what is low on battery, the binary sensors ending "
+    "_battery_plus_low that are on are the answer — name them and count them "
+    "carefully. "
+    "If one of these is genuinely missing or unavailable, say so; do not say the "
+    "house has no such reading when you simply have not found it."
+)
