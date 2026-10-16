@@ -1,0 +1,35 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Jarvis",
+        "description": "Point Home Assistant at the Jarvis (hermes-agent) gateway. Setup only calls /v1/models, which starts no agent turn and costs nothing.",
+        "data": {
+          "url": "Gateway URL",
+          "api_key": "API key (API_SERVER_KEY)",
+          "model": "Model name"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the Jarvis gateway.",
+      "invalid_auth": "The gateway rejected that API key."
+    },
+    "abort": {
+      "already_configured": "This Jarvis gateway is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Jarvis response handling",
+        "description": "The Assist pipeline applies no timeout of its own, so this timeout is what keeps a slow Jarvis from wedging voice. Measured on the sentences that actually reach Jarvis, 1 turn in 20 finishes inside 12 s, 11 in 20 inside 30 s and 18 in 20 inside 60 s — a longer timeout answers more turns, at the price of waiting for them. A timeout stops Home Assistant waiting; it does not cancel Jarvis, which may still act afterwards.",
+        "data": {
+          "timeout": "Timeout (seconds)",
+          "fallback_local": "Fall back to Home Assistant's local intents when Jarvis does not answer",
+          "max_spoken_chars": "Maximum characters to read aloud (0 for no limit)"
+        }
+      }
+    }
+  }
+}
