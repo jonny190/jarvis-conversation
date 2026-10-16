@@ -29,9 +29,13 @@ from .const import (
     DEFAULT_FALLBACK_LOCAL,
     DEFAULT_MAX_SPOKEN_CHARS,
     DEFAULT_MODEL,
+    DEFAULT_REASONING_EFFORT,
     DEFAULT_TIMEOUT,
     DOMAIN,
     SESSION_ID_PREFIX,
+    VOICE_BRIEF_ANSWER_SHAPE,
+    VOICE_BRIEF_NO_INFERRED_EVENTS,
+    VOICE_BRIEF_PINNED_FACTS,
 )
 from .speech import prepare_for_tts
 
@@ -295,7 +299,7 @@ class JarvisConversationEntity(conversation.ConversationEntity):
         """
         url = str(self._option(CONF_URL, "")).rstrip("/") + "/v1/chat/completions"
         timeout = float(self._option(CONF_TIMEOUT, DEFAULT_TIMEOUT))
-        payload = {
+        payload: dict[str, Any] = {
             "model": self._option(CONF_MODEL, DEFAULT_MODEL),
             "stream": True,
             "messages": [
@@ -303,6 +307,11 @@ class JarvisConversationEntity(conversation.ConversationEntity):
                 {"role": "user", "content": user_input.text},
             ],
         }
+        # Half of the voice profile's speed, and it costs nothing on the server. See
+        # DEFAULT_REASONING_EFFORT: this is per-request, so it cannot reach the
+        # Telegram, WhatsApp, CLI or cron routes even in principle.
+        if DEFAULT_REASONING_EFFORT is not None:
+            payload["model_options"] = {"reasoning_effort": DEFAULT_REASONING_EFFORT}
         headers = {
             "Authorization": f"Bearer {self._option(CONF_API_KEY, '')}",
             # Maps one HA conversation onto one Hermes session, so a follow-up
@@ -381,7 +390,22 @@ class JarvisConversationEntity(conversation.ConversationEntity):
         return text, None, None
 
     def _system_prompt(self, user_input: conversation.ConversationInput) -> str:
-        """Carry room/satellite context and the spoken-reply contract to Jarvis."""
+        """Carry room/satellite context and the voice brief to Jarvis.
+
+        Order matters and is not arbitrary. Hermes appends this whole string to
+        Jarvis's standing prompt as `ephemeral_system_prompt` (DAV-29 §4.3), so the
+        last thing here is the last thing Jarvis reads before the question:
+
+          1. where the request came from, and which room "here" means;
+          2. the answer-shape rules, so the length constraint frames everything;
+          3. the refusal rule, because it overrides the urge to be helpful that
+             rules 2 and 4 otherwise encourage;
+          4. the three pinned facts, nearest the question, where a specific entity
+             id is most likely to be used instead of a guess.
+
+        Anything the pipeline passes in `extra_system_prompt` still goes last: it is
+        the user's own per-pipeline text and should be able to override us.
+        """
         parts = [
             "This request arrived through Home Assistant Assist and your reply will be "
             "read aloud by a speaker."
@@ -413,6 +437,9 @@ class JarvisConversationEntity(conversation.ConversationEntity):
             "Answer in one or two short sentences of plain speech: no markdown, no "
             "lists, no emoji, no entity ids."
         )
+        parts.append(VOICE_BRIEF_ANSWER_SHAPE)
+        parts.append(VOICE_BRIEF_NO_INFERRED_EVENTS)
+        parts.append(VOICE_BRIEF_PINNED_FACTS)
         if user_input.extra_system_prompt:
             parts.append(user_input.extra_system_prompt)
         return " ".join(parts)
