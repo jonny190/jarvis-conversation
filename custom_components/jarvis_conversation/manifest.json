@@ -6,9 +6,9 @@
   "dependencies": [
     "conversation"
   ],
-  "documentation": "https://github.com/daveys-home/jarvis-conversation",
+  "documentation": "https://github.com/jonny190/jarvis-conversation",
   "integration_type": "service",
   "iot_class": "local_polling",
   "requirements": [],
-  "version": "0.1.2"
+  "version": "0.1.3"
 }
