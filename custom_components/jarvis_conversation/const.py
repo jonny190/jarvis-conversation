@@ -150,6 +150,22 @@ VOICE_BRIEF_ANSWER_SHAPE: Final = (
 # itself is a reading, not an inference. "Last run finished at 14:02" from an entity
 # whose own name says it tracks that is fine. `last_changed` on an idle switch is
 # not — it says when the state last moved, not what happened.
+#
+# HARDENED 2026-10-19, and this is the owner's decision, not a tidy-up. The
+# 14:46 probe on 16 Oct added VOICE_BRIEF_PINNED_POWER and the longer brief
+# walked straight into the trap the paragraph above only described in a COMMENT:
+#   "its state machine last changed at ten thirty-six this morning, WHICH
+#    SUGGESTS IT FINISHED A CYCLE THEN"
+# The machine had not run since 10 Oct; 10:36 was Home Assistant restarting and
+# restoring the helper, exactly as Friday predicted in writing on DAV-35 at
+# 12:13 before I ran it. A rule that lives in a comment is not a rule, so
+# `last_changed`/`last_updated` and the restore-on-restart reason are now named
+# in the brief text itself. The owner chose this over applying as-is, dropping
+# `reasoning_effort: none`, or stopping (DAV-33 interaction adc474da, question
+# `next-step` -> `harden-and-remeasure`, resolved 2026-10-16 14:45:41 UTC,
+# `human_only`). It is the ONLY change in this commit: the four present-tense
+# recoveries from VOICE_BRIEF_PINNED_POWER are deliberately left exactly as they
+# were, so the re-measurement varies one thing.
 VOICE_BRIEF_NO_INFERRED_EVENTS: Final = (
     "You can see what the house is right now; you cannot see what it did earlier. "
     "If the question is about something that happened rather than something that is "
@@ -159,8 +175,16 @@ VOICE_BRIEF_NO_INFERRED_EVENTS: Final = (
     "holds a last-run or a daily total. Otherwise say plainly that you cannot tell "
     "from here. A device that is idle, off, closed or at rest tells you nothing "
     "about whether it ran: never turn a resting state into a finished event, and "
-    "never offer a guess about the past as though it were a reading. Saying you "
-    "cannot tell is a correct answer; guessing is not."
+    "never offer a guess about the past as though it were a reading. "
+    "One trap in particular: how long ago a value last changed is not a record of "
+    "what happened. Never treat an entity's last_changed or last_updated time — or "
+    "any phrase like \"it last changed at\" — as evidence that something ran, "
+    "started or finished. It marks only when the state last moved, and Home "
+    "Assistant restores its helpers and switches when it restarts, so that "
+    "timestamp is very often the restart itself rather than anything the house "
+    "did. If the only thing you have is when a state last changed, you cannot "
+    "tell, and you must say so rather than reasoning from it. "
+    "Saying you cannot tell is a correct answer; guessing is not."
 )
 
 # Layer 1c — three pinned facts (DAV-33 §1.2).

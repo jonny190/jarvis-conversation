@@ -36,6 +36,7 @@ from .const import (
     VOICE_BRIEF_ANSWER_SHAPE,
     VOICE_BRIEF_NO_INFERRED_EVENTS,
     VOICE_BRIEF_PINNED_FACTS,
+    VOICE_BRIEF_PINNED_POWER,
 )
 from .speech import prepare_for_tts
 
@@ -440,6 +441,15 @@ class JarvisConversationEntity(conversation.ConversationEntity):
         parts.append(VOICE_BRIEF_ANSWER_SHAPE)
         parts.append(VOICE_BRIEF_NO_INFERRED_EVENTS)
         parts.append(VOICE_BRIEF_PINNED_FACTS)
+        # DAV-33. Until now this block existed in const.py but was never wired in,
+        # so the shipped brief was the arm that regressed P06/P10/P13/P19 — four
+        # present-tense sentences where Jarvis asserted a reading does not exist
+        # while sensor.house_power_draw_from_inverter sat at 1681 W. Pinning the
+        # entities recovers all four AND is faster (P19: wrong at 8.3 s -> right at
+        # 4.0 s), because it replaces a search with a lookup. It is wired in here
+        # rather than left in the harness because the thing I measure has to be the
+        # thing that ships; that gap is exactly what made Arm 3 unreproducible.
+        parts.append(VOICE_BRIEF_PINNED_POWER)
         if user_input.extra_system_prompt:
             parts.append(user_input.extra_system_prompt)
         return " ".join(parts)

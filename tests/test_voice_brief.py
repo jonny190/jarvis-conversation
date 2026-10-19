@@ -17,6 +17,7 @@ the reason you want it to fail.
 
 import importlib.util
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent / "custom_components" / "jarvis_conversation"
@@ -54,6 +55,7 @@ def render_room_unknown(language="en"):
         const.VOICE_BRIEF_ANSWER_SHAPE,
         const.VOICE_BRIEF_NO_INFERRED_EVENTS,
         const.VOICE_BRIEF_PINNED_FACTS,
+        const.VOICE_BRIEF_PINNED_POWER,
     ])
 
 
@@ -79,6 +81,17 @@ check("says a refusal is a correct answer",
 # The carve-out has to survive, or the rule refuses questions it can answer.
 check("allows a stored value that records the event",
       "stored value that records that event" in rule)
+# DAV-33, 19 Oct. The hardening the owner chose. These four assertions exist
+# because the rule ALREADY forbade this in a Python comment and the model did it
+# anyway: "its state machine last changed at ten thirty-six this morning, which
+# suggests it finished a cycle then". A rule in a comment is not a rule.
+check("names last_changed as forbidden evidence", "last_changed" in rule)
+check("names last_updated too", "last_updated" in rule)
+check("gives the restart reason, not just the prohibition",
+      "restart" in rule and "restore" in rule,
+      "naming WHY the timestamp lies is what makes it stick")
+check("forbids reasoning from a bare last-changed time",
+      "only thing you have is when a state last changed" in rule)
 
 print("\nthe three pinned facts (DAV-33 §1.2)")
 facts = const.VOICE_BRIEF_PINNED_FACTS
@@ -103,7 +116,21 @@ print("\nthe assembled brief")
 check("brief is assembled in the documented order",
       brief.index(const.VOICE_BRIEF_ANSWER_SHAPE)
       < brief.index(const.VOICE_BRIEF_NO_INFERRED_EVENTS)
-      < brief.index(const.VOICE_BRIEF_PINNED_FACTS))
+      < brief.index(const.VOICE_BRIEF_PINNED_FACTS)
+      < brief.index(const.VOICE_BRIEF_PINNED_POWER))
+# THE DRIFT GUARD. render_room_unknown() above is a COPY of the assembly in
+# conversation.py, and on 19 Oct the copy lied: VOICE_BRIEF_PINNED_POWER had been
+# in const.py since 16 Oct, was in the probe harness, and was never wired into the
+# adapter — so "the brief" in the tests and "the brief" on the voice path were two
+# different strings for three days. Rather than trust a third hand-kept copy, read
+# the real order out of conversation.py's source and insist they match.
+_src = (pathlib.Path(__file__).resolve().parents[1]
+        / "custom_components" / "jarvis_conversation" / "conversation.py").read_text()
+_shipped = re.findall(r"parts\.append\((VOICE_BRIEF_[A-Z_]+)\)", _src)
+_tested = ["VOICE_BRIEF_ANSWER_SHAPE", "VOICE_BRIEF_NO_INFERRED_EVENTS",
+           "VOICE_BRIEF_PINNED_FACTS", "VOICE_BRIEF_PINNED_POWER"]
+check("the tested brief is the brief conversation.py actually sends",
+      _shipped == _tested, f"conversation.py appends {_shipped}, tests render {_tested}")
 # Standing context on a latency-critical path. At DAV-29's measured 14.2 ms per
 # 1,000 prompt tokens this is single-digit milliseconds, but the real risk is
 # drift: the moment this grows into a knowledge base it is the 75 KB skill file
