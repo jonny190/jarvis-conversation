@@ -140,7 +140,7 @@ check("pin seven forbids naming devices the call did not return",
 check("pin seven says what to do when nothing is flagged",
       "nothing is" in power and "flagged low" in power)
 
-print("\nthe pinned event-record block (DAV-33, pins eight and nine)")
+print("\nthe pinned event-record block (DAV-33, pins eight, nine and ten)")
 events = const.VOICE_BRIEF_PINNED_EVENTS
 # P09 and P14 both refused by asserting the record does not exist, while C1 and
 # C5 read these very entities in the same run. `[measured]` both hold real
@@ -170,6 +170,25 @@ check("frames them as a reading rather than a guess",
 # seven already work. Keep the appliance out of the rule itself.
 check("the refusal rule still does not name the washing machine",
       "washing" not in const.VOICE_BRIEF_NO_INFERRED_EVENTS.lower())
+# PIN TEN. N2 "how many times has the boiler come on today" was right on the
+# 10:05 run and became "the house keeps no count of that" on the 10:30 one,
+# because pin nine gave it a one-call lookup for "the heating" and it stopped
+# there. `[measured]` counter.boiler_daily_cycles = 1 at the time it said so.
+check("pins counter.boiler_daily_cycles",
+      "counter.boiler_daily_cycles" in events)
+# The half that is actually about the regression: a pin outcompetes the search
+# for every adjacent sentence, so pin nine has to say what it CANNOT answer or
+# the counter is unreachable behind it.
+check("pin ten bounds pin nine rather than just adding an entity",
+      "cannot answer a how-many question" in events)
+# The counter resets nightly (automation.boiler_reset_cycle_counter_daily), so
+# "today" is a property of the entity and not an assumption Jarvis has to make.
+check("pin ten says the counter is a daily one",
+      "resets at midnight" in events)
+# Counting is not the same shape as the two timestamps above, and the block's
+# own opening sentence has to stop saying there are two of them.
+check("the block no longer announces itself as two helpers",
+      "Two more" not in events and "Three more" in events)
 
 print("\nthe assembled brief")
 check("brief is assembled in the documented order",
@@ -213,7 +232,26 @@ check("the tested brief is the brief conversation.py actually sends",
 # next addition trips this check and gets argued about too. If it ever needs
 # raising a third time, that is the signal the block has become a knowledge base
 # and should go back to being a skill file.
-check("brief stays small", len(brief) < 4500, f"{len(brief)} chars")
+#
+# RAISED AGAIN, 4,500 -> 4,750, ON 2026-10-19 FOR PIN TEN. This is the SECOND
+# raise, by the count the paragraph above set up, and the next one is the third
+# and is the one that should stop and reconsider the design instead. Saying so
+# in the same breath as moving the number, because the alternative is to let the
+# count quietly restart.
+#
+# Why it could not be earned this time. The guard tripped at 4,713 and pin ten
+# is 218 chars, so fitting under 4,500 meant cutting 213 of those 218 -- i.e.
+# deleting the authorised change. The only other slack is in pins one to nine,
+# and every one of those lines is currently MEASURED GOOD: P04, P07, P13, P17,
+# P09 and P14 all pass on them as written. Trimming a measured-good line to make
+# room for a new one would change two things in a run whose entire purpose is to
+# vary one, which is the mistake that cost me the 16 Oct measurement. So the
+# number moves and the measured text does not.
+#
+# The cost, stated rather than waved away: 4,750 chars is roughly 1,190 prompt
+# tokens, about 17 ms at DAV-29's measured 14.2 ms per 1,000, against a 12 s
+# ceiling. The brief now sits at 4,713 with 37 to spare.
+check("brief stays small", len(brief) < 4750, f"{len(brief)} chars")
 check("no markdown leaked into a spoken-context prompt",
       not any(m in brief for m in ("```", "\n- ", "**")))
 

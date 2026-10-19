@@ -360,13 +360,60 @@ VOICE_BRIEF_PINNED_POWER: Final = (
 # SENSOR whose own name says it holds a last-run", and that wording may itself
 # be steering the domain filter. Flagged in the report, not changed here,
 # because the re-measurement has to vary one thing.
+#
+# PIN TEN ADDED 2026-10-19, and it exists to repair damage this very block did.
+# It is the owner's decision: DAV-33 interaction f59def8a, question `next-step`
+# -> `fix-n2-first`, resolved 2026-10-19 09:41:02 UTC, `human_only`. It is the
+# ONLY change in this commit.
+#
+# THE REGRESSION. Pins eight and nine fixed P09 and P14 and took N2 with them,
+# in the wrong direction. N2 "how many times has the boiler come on today" was
+# RIGHT on the 10:05 run -- "Once so far today, the boiler cycle counter stands
+# at one" -- and on the 10:30 run it became:
+#     "I can tell you the heating last came on at half past six this morning,
+#      but not how many times it has run today — THE HOUSE KEEPS NO COUNT OF
+#      THAT."
+# `[measured]` 2026-10-19 10:4x UTC against live HA state: counter
+# .boiler_daily_cycles = 1, friendly name "Boiler Daily Cycles", reset nightly
+# by automation.boiler_reset_cycle_counter_daily, and switch.heating_boiler has
+# exactly one off->on edge today. The count was there and the sentence denied
+# it existed -- the same spoken-falsehood class pins eight and nine were added
+# to stop, which makes it mine rather than variance.
+#
+# WHY IT HAPPENED, which is the pin working too well. Pin nine named one entity
+# for "the heating" and replaced a search with a lookup; that is the whole
+# mechanism and it is why P14 went from three tool calls to one. N2 is also
+# about the heating, so it took the same lookup -- `[measured]` tool_call_count
+# = 1 on that probe -- read a timestamp, found it could not answer a how-many
+# question from it, and stopped. Before pin nine it had no shortcut and
+# searched until it found the counter. So a pin does not merely add an answer:
+# it OUTCOMPETES the search for every sentence that looks adjacent to it, and
+# anything the pinned entity cannot answer has to be pinned too or it is lost.
+# That is a general cost of this technique and it belongs in the report.
+#
+# THE FIX IS THE SAME ONE THAT WORKED, PLUS A BOUNDARY. Naming the counter is
+# pins four to nine over again. The second sentence is the new part and is the
+# half that is really about the regression: it tells Jarvis what pin nine
+# cannot do, so the lookup hands the question on instead of ending it. I have
+# deliberately NOT written the general rule ("when a pinned entity cannot
+# answer, keep looking") -- it would probably help more sentences and it is a
+# broader change than the one authorised, and generalising beyond the evidence
+# is what cost me the 16 Oct run.
+#
+# WHAT I CONSIDERED AND DID NOT DO: rewording pin nine itself to narrow it. It
+# is one line smaller, but it changes a line that is currently MEASURED GOOD --
+# P14 and C5 both passed on it this morning -- to fix a sentence it was not
+# aimed at. Adding beside it leaves the passing line alone.
 VOICE_BRIEF_PINNED_EVENTS: Final = (
-    "Two more, about what this house records for itself. Both are "
+    "Three more, about what this house records for itself. The first two are "
     "input_datetime helpers rather than sensors, so a search narrowed to the "
     "sensor domain will not return them — read them by name. "
     "Eight: input_datetime.washing_machine_last_finished is when the washing "
     "machine last finished a cycle. "
     "Nine: input_datetime.heating_last_on is when the heating last came on. "
+    "Ten: counter.boiler_daily_cycles is how many times the boiler has come on "
+    "today, and it resets at midnight. Nine holds only the latest time and "
+    "cannot answer a how-many question — read the counter for that. "
     "Each records the event itself, so reading one is a reading and not a "
     "guess. If one is unavailable say so, but never say the house keeps no "
     "record when you have not found it."
