@@ -311,3 +311,63 @@ VOICE_BRIEF_PINNED_POWER: Final = (
     "If one of these is genuinely missing or unavailable, say so; do not say the "
     "house has no such reading when you simply have not found it."
 )
+
+# DAV-33: a THIRD pinned block, again kept separate so it can be judged -- or
+# dropped -- on its own. It is the owner's decision: DAV-33 interaction
+# 0f523bbb, question `next-step` -> `pin-event-helpers`, resolved 2026-10-19
+# 09:19:19 UTC, `human_only`. It is the ONLY change in this commit.
+#
+# THE FAULT IT FIXES. The 19 Oct 10:05 run left exactly one failure standing,
+# and it was the last thing between this profile and the bar. P09 "did the
+# washing machine finish" refused -- which the rule permits -- but justified
+# the refusal with a claim about the house:
+#     "there's no last-run or finished sensor"
+# P14 did the identical thing with the heating: "no record of the last time it
+# came on". `[measured]` 2026-10-19 09:22 UTC against live HA state, both
+# records exist and hold real values:
+#     input_datetime.washing_machine_last_finished = 2026-10-17 12:11:40
+#     input_datetime.heating_last_on               = 2026-10-19 06:32:00
+# and C1 and C5, in the SAME run, read those very entities and answered
+# correctly. So the refusal was in the safe direction but was still a spoken
+# falsehood, which is the same fault I failed P18 for on 16 Oct.
+#
+# WHY IT HAPPENED, which is mechanical and not a mood. `[measured]` from the
+# recorded tool calls in state.db, replayed against live state:
+#     P09  ha_list_entities(domain="sensor",        area="washing")  ->   4   no helper
+#          ha_list_entities(domain="binary_sensor", area="washing")  ->   0   no helper
+#          ha_list_entities(domain="switch",        area="washing")  ->   2   no helper
+#          ha_list_entities(                        area="utility")  ->   0   no helper
+#     C1   ha_list_entities(                        area="washing")  ->  20   HELPER, first row
+#     P14  ha_list_entities(domain="sensor",        area="heating")  ->  50   no helper
+#          ha_list_entities(domain="climate")                        ->  20   no helper
+#     C5   ha_list_entities(                        area="heating")  -> 124   HELPER
+# Every failing call carried a DOMAIN FILTER, and the records are
+# `input_datetime` helpers -- a domain Jarvis never tried, because a stored
+# reading sounds like a sensor. The filter excluded the answer and Jarvis then
+# reported its own empty result as a fact about the house. "There is no
+# last-run sensor" is true of `domain=sensor` and false of this house.
+#
+# That is the same shape as pin seven's defect -- a filter that cannot return
+# the answers -- which is why the fix is the same one that worked: name the
+# entity, and say what it is, so the lookup replaces the search.
+#
+# WHAT I DELIBERATELY DID NOT WRITE. The general rule ("event records in this
+# house are helpers, so never filter by domain when hunting for one") would
+# probably fix more than two sentences. It is also a broader change than the
+# one authorised, and generalising beyond the evidence is what cost me the
+# 16 Oct run. Two entities, named, measured, and nothing else. Also left
+# untouched: VOICE_BRIEF_NO_INFERRED_EVENTS still says the carve-out is "a
+# SENSOR whose own name says it holds a last-run", and that wording may itself
+# be steering the domain filter. Flagged in the report, not changed here,
+# because the re-measurement has to vary one thing.
+VOICE_BRIEF_PINNED_EVENTS: Final = (
+    "Two more, about what this house records for itself. Both are "
+    "input_datetime helpers rather than sensors, so a search narrowed to the "
+    "sensor domain will not return them — read them by name. "
+    "Eight: input_datetime.washing_machine_last_finished is when the washing "
+    "machine last finished a cycle. "
+    "Nine: input_datetime.heating_last_on is when the heating last came on. "
+    "Each records the event itself, so reading one is a reading and not a "
+    "guess. If one is unavailable say so, but never say the house keeps no "
+    "record when you have not found it."
+)

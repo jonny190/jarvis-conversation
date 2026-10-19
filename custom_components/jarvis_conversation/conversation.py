@@ -35,6 +35,7 @@ from .const import (
     SESSION_ID_PREFIX,
     VOICE_BRIEF_ANSWER_SHAPE,
     VOICE_BRIEF_NO_INFERRED_EVENTS,
+    VOICE_BRIEF_PINNED_EVENTS,
     VOICE_BRIEF_PINNED_FACTS,
     VOICE_BRIEF_PINNED_POWER,
 )
@@ -450,6 +451,12 @@ class JarvisConversationEntity(conversation.ConversationEntity):
         # rather than left in the harness because the thing I measure has to be the
         # thing that ships; that gap is exactly what made Arm 3 unreproducible.
         parts.append(VOICE_BRIEF_PINNED_POWER)
+        # DAV-33, 19 Oct. Wired in in the same commit that defines it, because the
+        # last time a VOICE_BRIEF_* block sat in const.py un-appended the harness
+        # and the house sent different briefs for three days. The drift guard in
+        # tests/test_voice_brief.py reads this append order out of the source, so
+        # adding the constant without adding the line here fails the tests.
+        parts.append(VOICE_BRIEF_PINNED_EVENTS)
         if user_input.extra_system_prompt:
             parts.append(user_input.extra_system_prompt)
         return " ".join(parts)

@@ -56,6 +56,7 @@ def render_room_unknown(language="en"):
         const.VOICE_BRIEF_NO_INFERRED_EVENTS,
         const.VOICE_BRIEF_PINNED_FACTS,
         const.VOICE_BRIEF_PINNED_POWER,
+        const.VOICE_BRIEF_PINNED_EVENTS,
     ])
 
 
@@ -139,12 +140,44 @@ check("pin seven forbids naming devices the call did not return",
 check("pin seven says what to do when nothing is flagged",
       "nothing is" in power and "flagged low" in power)
 
+print("\nthe pinned event-record block (DAV-33, pins eight and nine)")
+events = const.VOICE_BRIEF_PINNED_EVENTS
+# P09 and P14 both refused by asserting the record does not exist, while C1 and
+# C5 read these very entities in the same run. `[measured]` both hold real
+# values: the wash finished 2026-10-17 12:11:40, the heating came on today at
+# 06:32. Naming them is the whole fix, so their absence is the assertion.
+for entity in ("input_datetime.washing_machine_last_finished",
+               "input_datetime.heating_last_on"):
+    check(f"pins {entity}", entity in events)
+# The cause was a DOMAIN FILTER, not a missing entity: every failing call was
+# ha_list_entities(domain="sensor"/"binary_sensor"/"switch"/"climate", ...),
+# and these records are input_datetime helpers. Saying so is what stops the
+# search being narrowed past the answer again.
+check("says these are helpers, not sensors",
+      "input_datetime helpers rather than sensors" in events)
+check("warns that a sensor-domain search misses them",
+      "sensor domain will not return them" in events)
+# The exact spoken falsehood this block exists to stop: "there's no last-run or
+# finished sensor" (P09) and "no record of the last time it came on" (P14).
+check("forbids claiming the house keeps no such record",
+      "never say the house keeps no record" in events)
+# The refusal rule's carve-out has to still apply to these, or the rule and the
+# pin contradict each other and the model gets to pick.
+check("frames them as a reading rather than a guess",
+      "a reading" in events and "not a guess" in events)
+# Pin seven's lesson: an instruction that names an appliance in the REFUSAL
+# rule memorises; naming an entity id in a PINNED block is how pins one to
+# seven already work. Keep the appliance out of the rule itself.
+check("the refusal rule still does not name the washing machine",
+      "washing" not in const.VOICE_BRIEF_NO_INFERRED_EVENTS.lower())
+
 print("\nthe assembled brief")
 check("brief is assembled in the documented order",
       brief.index(const.VOICE_BRIEF_ANSWER_SHAPE)
       < brief.index(const.VOICE_BRIEF_NO_INFERRED_EVENTS)
       < brief.index(const.VOICE_BRIEF_PINNED_FACTS)
-      < brief.index(const.VOICE_BRIEF_PINNED_POWER))
+      < brief.index(const.VOICE_BRIEF_PINNED_POWER)
+      < brief.index(const.VOICE_BRIEF_PINNED_EVENTS))
 # THE DRIFT GUARD. render_room_unknown() above is a COPY of the assembly in
 # conversation.py, and on 19 Oct the copy lied: VOICE_BRIEF_PINNED_POWER had been
 # in const.py since 16 Oct, was in the probe harness, and was never wired into the
@@ -155,14 +188,32 @@ _src = (pathlib.Path(__file__).resolve().parents[1]
         / "custom_components" / "jarvis_conversation" / "conversation.py").read_text()
 _shipped = re.findall(r"parts\.append\((VOICE_BRIEF_[A-Z_]+)\)", _src)
 _tested = ["VOICE_BRIEF_ANSWER_SHAPE", "VOICE_BRIEF_NO_INFERRED_EVENTS",
-           "VOICE_BRIEF_PINNED_FACTS", "VOICE_BRIEF_PINNED_POWER"]
+           "VOICE_BRIEF_PINNED_FACTS", "VOICE_BRIEF_PINNED_POWER",
+           "VOICE_BRIEF_PINNED_EVENTS"]
 check("the tested brief is the brief conversation.py actually sends",
       _shipped == _tested, f"conversation.py appends {_shipped}, tests render {_tested}")
 # Standing context on a latency-critical path. At DAV-29's measured 14.2 ms per
 # 1,000 prompt tokens this is single-digit milliseconds, but the real risk is
 # drift: the moment this grows into a knowledge base it is the 75 KB skill file
 # again, which is the thing the voice profile exists to remove.
-check("brief stays small", len(brief) < 4000, f"{len(brief)} chars")
+#
+# RAISED FROM 4,000 TO 4,500 ON 2026-10-19, and I am recording it here rather
+# than quietly editing the number, because moving your own guard to fit your own
+# change is the oldest way to make a limit meaningless. The facts: the brief was
+# 3,958 chars with 42 to spare, so the authorised change could not fit under the
+# old number however it was worded. The cost of the new ceiling is measurable
+# and small -- 4,500 chars is roughly 1,100 prompt tokens, about 16 ms at
+# DAV-29's measured rate, against a 12 s ceiling.
+#
+# 4,500 is the smallest round number the authorised change fits under, and it
+# only fits because the guard made me earn it: the first draft of pins eight and
+# nine came to 4,635 and FAILED here, and I trimmed the prose to 536 chars
+# rather than raise the number a second time to match my own text. The brief now
+# sits at 4,495 with 5 chars to spare -- deliberately not comfortable, so the
+# next addition trips this check and gets argued about too. If it ever needs
+# raising a third time, that is the signal the block has become a knowledge base
+# and should go back to being a skill file.
+check("brief stays small", len(brief) < 4500, f"{len(brief)} chars")
 check("no markdown leaked into a spoken-context prompt",
       not any(m in brief for m in ("```", "\n- ", "**")))
 
