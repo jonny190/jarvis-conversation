@@ -404,16 +404,49 @@ VOICE_BRIEF_PINNED_POWER: Final = (
 # is one line smaller, but it changes a line that is currently MEASURED GOOD --
 # P14 and C5 both passed on it this morning -- to fix a sentence it was not
 # aimed at. Adding beside it leaves the passing line alone.
+#
+# PIN ELEVEN ADDED 2026-10-19. The owner's decision: DAV-33 interaction
+# a7d22c8e, question `n4-pin` -> `pin-bedroom-motion`, human_only, resolved
+# 2026-10-19 09:57:29 UTC. It is the ONLY change to the brief in this commit.
+#
+# THE FAULT. N4 "has anyone been upstairs this morning" refused with ZERO tool
+# calls on two consecutive runs -- "motion sensors report the present, not the
+# morning's traffic, so there's no record of who went up". `[measured]` at
+# 09:59 UTC against live HA state: input_datetime.bedroom_last_motion =
+# "2026-10-19 09:20:53", and binary_sensor.landing_presence_zone_1_occupancy
+# ("Stairs") had changed state that morning. The house keeps the record and
+# the sentence denied it existed -- the same spoken-falsehood class pins eight
+# and nine were written to stop, on an entity nobody had pinned.
+#
+# THE BOUNDARY IS WRITTEN UP FRONT THIS TIME. Pin ten cost a regression to
+# teach me that a pin outcompetes the search for every adjacent sentence, so
+# whatever the pinned entity cannot answer has to be said or it is lost behind
+# it. Here the gap between the question and the entity is wide: N4 asks about
+# "upstairs" and about "anyone", and this helper knows one room and no
+# identities. So the pin states both limits rather than waiting for a run to
+# find them. Adjacent sentences at risk are P02 and P18, both about the
+# bedroom; neither is about movement, and both are currently measured good.
+#
+# ALSO CHANGED, AND IT IS NOT OPTIONAL. The block's domain-filter warning said
+# "the first two are input_datetime helpers". Eleven is a third one, and it is
+# the warning -- not the pin -- that made eight and nine start working, since
+# ha_list_entities(domain="sensor") cannot return an input_datetime at all. If
+# eleven sits outside that sentence it fails in exactly the way they did. So
+# the opener now reads "Eight, nine and eleven". That is a consequence of the
+# authorised change rather than a second change riding along with it.
 VOICE_BRIEF_PINNED_EVENTS: Final = (
-    "Three more, about what this house records for itself. The first two are "
-    "input_datetime helpers rather than sensors, so a search narrowed to the "
-    "sensor domain will not return them — read them by name. "
+    "Four more, about what this house records for itself. Eight, nine and "
+    "eleven are input_datetime helpers rather than sensors, so a search "
+    "narrowed to the sensor domain will not return them — read them by name. "
     "Eight: input_datetime.washing_machine_last_finished is when the washing "
     "machine last finished a cycle. "
     "Nine: input_datetime.heating_last_on is when the heating last came on. "
     "Ten: counter.boiler_daily_cycles is how many times the boiler has come on "
     "today, and it resets at midnight. Nine holds only the latest time and "
     "cannot answer a how-many question — read the counter for that. "
+    "Eleven: input_datetime.bedroom_last_motion is when the bedroom last saw "
+    "movement. It is the bedroom's own record and says nothing about who "
+    "moved or about any other room. "
     "Each records the event itself, so reading one is a reading and not a "
     "guess. If one is unavailable say so, but never say the house keeps no "
     "record when you have not found it."
