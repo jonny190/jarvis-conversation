@@ -251,6 +251,46 @@ VOICE_BRIEF_PINNED_FACTS: Final = (
 # cannot pay. So instead of buying the answer with reasoning time, this tells it
 # where to look -- exactly the mechanism that already fixed the battery
 # percentage and the warmest room.
+#
+# PIN SEVEN REWRITTEN 2026-10-19, and this is the owner's decision: DAV-33
+# interaction 23d836dd, question `next-step` -> `fix-pin-and-remeasure`,
+# resolved 2026-10-19 08:55:19 UTC, `human_only`. It is the ONLY change in this
+# commit. P18's wording was offered as a separate option on the same card and
+# was NOT chosen, so it is deliberately untouched and the re-measurement again
+# varies one thing.
+#
+# THE DEFECT. The old line said "the binary sensors ending _battery_plus_low
+# that are on are the answer". `[measured]` 2026-10-19 09:4x UTC against live
+# HA state, 6,047 entities: there are THREE sibling families, not one --
+#   _battery_plus_low     46 entities, 41 off / 5 unavailable, ZERO on
+#   _battery_plus_low_2   28 entities, 24 off / 4 ON
+#   _battery_low          15 entities, 13 off / 2 unavailable, ZERO on
+# Every live flag in this house is in the `_2` family, which the old line's
+# suffix excludes. So the pin as written points at a set that is always empty,
+# and a Jarvis that obeyed it literally would say "nothing is low" while five
+# devices sit at 0-2 %.
+#
+# A CORRECTION TO MY OWN 08:24 REPORT, which said "of the 46 _battery_plus_low
+# binary sensors, zero are on, so 'flagged' is wrong". The first half is true
+# and the conclusion drawn from it is not: I filtered on `_battery_plus_low`
+# and never saw `_battery_plus_low_2`. The four devices Jarvis named really
+# ARE flagged -- `[measured]` all four read `on` continuously from before
+# 06:00, i.e. during the 08:08 run -- and "flagged" is the right word in a
+# house whose `automation.low_battery_notifications_actions` is driven off
+# exactly these. P13 is still a partial, but for the narrower reason that it
+# invented a fifth device: `[measured]` En-Suit Presence is at 50 % and its
+# flag is off. The pin was wrong either way; my description of how was.
+#
+# WHY THE NEW LINE NAMES A TOOL CALL RATHER THAN A SUFFIX. `[measured]` from
+# ~/.hermes/plugins/homeassistant/tools.py:93-120 on the live LXC,
+# `ha_list_entities` returns only entity_id / state / friendly_name -- it does
+# NOT expose device_class, so "the battery binary sensors" is not a filter
+# Jarvis can actually run. Its `area` argument is really a substring match
+# against friendly_name, so area="battery" is the one call that reaches all of
+# them: 89 entities, exactly the 4 that are on, ~10 KB of payload. Going by
+# state rather than by suffix is what makes this robust to the `_2` churn that
+# broke the old line, and is why the suffixes are documented here and kept OUT
+# of the brief -- the brief is standing context on a latency-critical path.
 VOICE_BRIEF_PINNED_POWER: Final = (
     "Four more, about power and the weather, where the entity names do not "
     "announce themselves and looking around for them is slow. "
@@ -263,9 +303,11 @@ VOICE_BRIEF_PINNED_POWER: Final = (
     "Six: the outdoor weather sensor is dead, so for the temperature outside use "
     "the weather.home entity's temperature attribute rather than hunting for an "
     "outdoor sensor. "
-    "Seven: for what is low on battery, the binary sensors ending "
-    "_battery_plus_low that are on are the answer — name them and count them "
-    "carefully. "
+    "Seven: for what is low on battery, list binary_sensor with the area filter "
+    '"battery": that one call returns every battery flag in the house, and the '
+    "ones reading on are the answer. Do not go by entity-id suffix, they vary. "
+    "Name only the ones that came back on; if none is on, say nothing is "
+    "flagged low. "
     "If one of these is genuinely missing or unavailable, say so; do not say the "
     "house has no such reading when you simply have not found it."
 )

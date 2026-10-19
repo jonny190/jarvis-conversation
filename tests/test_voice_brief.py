@@ -112,6 +112,33 @@ check("does not pin the Downstairs Bathroom outage as a standing fact",
       "unavailable" not in facts.lower() and "dead" not in facts.lower(),
       "the sensor recovered on 16 Oct; see the comment above the constant")
 
+print("\nthe pinned power/battery block (DAV-33)")
+power = const.VOICE_BRIEF_PINNED_POWER
+for entity in ("sensor.house_power_draw_from_inverter",
+               "sensor.solar_inverter_power_from_grid",
+               "weather.home"):
+    check(f"pins {entity}", entity in power)
+# PIN SEVEN. The 19 Oct re-measurement failed partly on P13, and the cause was
+# this line pointing at `_battery_plus_low` — `[measured]` 46 entities, zero
+# ever `on`, because every live flag in this house is in the `_battery_plus_low_2`
+# sibling family. A suffix that excludes the answers is worse than no pin at all:
+# obeying it literally yields "nothing is low" while five devices sit at 0-2 %.
+# So the assertion is that the dead suffix is ABSENT and the robust instruction
+# — list by area, go by state — is present.
+check("pin seven does not name the empty _battery_plus_low family",
+      "_battery_plus_low" not in power,
+      "that suffix misses the _2 family, where every live flag actually is")
+check("pin seven tells it to go by state, not by entity-id suffix",
+      "suffix" in power.lower() and "reading on are the answer" in power)
+check("pin seven names the one call that reaches every battery flag",
+      "binary_sensor" in power and '"battery"' in power)
+# The invented fifth device in P13's 08:08 answer. En-Suit Presence was at 50 %
+# and its flag was off, so the brief has to forbid padding the list.
+check("pin seven forbids naming devices the call did not return",
+      "only the ones that came back on" in power)
+check("pin seven says what to do when nothing is flagged",
+      "nothing is" in power and "flagged low" in power)
+
 print("\nthe assembled brief")
 check("brief is assembled in the documented order",
       brief.index(const.VOICE_BRIEF_ANSWER_SHAPE)
