@@ -434,6 +434,56 @@ VOICE_BRIEF_PINNED_POWER: Final = (
 # eleven sits outside that sentence it fails in exactly the way they did. So
 # the opener now reads "Eight, nine and eleven". That is a consequence of the
 # authorised change rather than a second change riding along with it.
+#
+# ---------------------------------------------------------------------------
+# THE DATE LINE, 2026-10-19. The owner's decision: DAV-33 interaction
+# 4091cb97, question `n4-stability` -> `add-date-line`, human_only, resolved
+# 2026-10-19 10:27:24 UTC. It is the ONLY change to the brief in this commit.
+#
+# THE FAULT, AND IT IS A DIFFERENT FAULT FROM EVERY OTHER ONE IN THIS FILE.
+# Pin eleven worked: N4 "has anyone been upstairs this morning" went from a
+# zero-tool-call refusal to a correct answer in one call. But measured six
+# times -- once on the bench and five on the house's own voice path -- it came
+# back 4 right, 1 clean refusal, and 1 of this shape:
+#     "the bedroom's own last-motion record is stamped 19 October -- THREE
+#      DAYS AGO -- so it gives no evidence of movement upstairs this morning"
+# `[measured]` 2026-10-19: the helper held 2026-10-19 09:20:53 and the date
+# was 19 October. So it read the right entity, got the right value, called
+# today three days ago, and then concluded the OPPOSITE of what it had just
+# read. Asked directly in the same session the gateway answers "Today is
+# Monday, 19 October 2026" -- the date is available, the arithmetic on it is
+# what fails at `reasoning_effort: none`.
+#
+# Every other rule in this file guards the step BEFORE the reading: which
+# entity to look at, which filter not to use, what not to infer from a resting
+# state. None of them guards the step AFTER it. A correct reading turned into
+# a false sentence by bad arithmetic is a spoken falsehood exactly like the
+# ones pins eight to eleven were written to stop, and the refusal rule cannot
+# catch it because nothing was inferred from a resting state -- the inference
+# was from a real record, done wrong.
+#
+# WHY IT LIVES HERE AND NOT IN VOICE_BRIEF_NO_INFERRED_EVENTS. The dated
+# values in this house are the three input_datetime helpers pinned in THIS
+# block; nothing in the facts or power blocks carries a date. Putting it in
+# the refusal rule would edit text that is currently measured good on the
+# house path (P09 right twice out of two there) to fix a fault that only
+# appears on this block's entities. Adding beside the measured-good line, not
+# through it -- the same reasoning as pin ten.
+#
+# THE THREE CLAUSES ARE ONE PER OBSERVED FAILURE MODE, not a general essay on
+# dates. (a) the arithmetic was wrong, so: compare against today's date and
+# say so when they match; (b) if the date is not certain, the safe output is
+# the reading itself rather than a computed interval; (c) the actual damage
+# was the conclusion CONTRADICTING the record, so forbid that directly. A
+# single instruction to "be careful with dates" would have left (c) open, and
+# (c) is the half a listener would act on.
+#
+# WHAT I DID NOT DO: inject today's date into the prompt from the adapter.
+# That is the obvious engineering fix and it is a bigger change than the one
+# authorised -- it alters what the adapter SENDS on every turn rather than
+# what the brief says, and `[measured]` the date is already reaching Jarvis,
+# so it would be treating a symptom whose cause I have not isolated. Worth
+# proposing on its own; not worth smuggling in here.
 VOICE_BRIEF_PINNED_EVENTS: Final = (
     "Four more, about what this house records for itself. Eight, nine and "
     "eleven are input_datetime helpers rather than sensors, so a search "
@@ -449,5 +499,11 @@ VOICE_BRIEF_PINNED_EVENTS: Final = (
     "moved or about any other room. "
     "Each records the event itself, so reading one is a reading and not a "
     "guess. If one is unavailable say so, but never say the house keeps no "
-    "record when you have not found it."
+    "record when you have not found it. "
+    "One more thing about these, because it is where a reading turns back "
+    "into a guess: each holds a date as well as a time, so work out how long "
+    "ago it was against today's date — if the date is today's, it happened "
+    "today; if you are not certain what today's date is, give the date and "
+    "time you read rather than how long ago it was; and never let that "
+    "arithmetic argue you out of a record you have just read."
 )

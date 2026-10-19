@@ -220,6 +220,31 @@ check("the domain-filter warning names every input_datetime pin",
       all(w in _preamble for w in ("Eight", "nine", "eleven")),
       _preamble)
 
+# THE DATE LINE, 2026-10-19. The owner's decision: DAV-33 interaction 4091cb97,
+# question `n4-stability` -> `add-date-line`, human_only. Measured six times,
+# N4 came back 4 right / 1 clean refusal / 1 WRONG, and the wrong one was:
+# "stamped 19 October -- three days ago -- so it gives no evidence of movement
+# upstairs this morning", said ON 19 October, from a helper reading 09:20:53
+# that same morning. Right entity, right value, arithmetic backwards,
+# conclusion inverted. One assertion per clause, because each clause answers
+# one observed failure mode and a later trim that drops one should fail here.
+check("the date line compares a stored date against today's",
+      "against today's date" in events)
+check("the date line says a date equal to today's means today",
+      "if the date is today's, it happened today" in events)
+check("the date line gives a safe fallback when today is uncertain",
+      "not certain what today's date is" in events
+      and "give the date and time you read" in events)
+# The clause that is actually about the damage. The falsehood was not the bad
+# subtraction; it was concluding there had been no movement while holding a
+# record of movement. That is the half a listener would act on.
+check("the date line forbids contradicting the record just read",
+      "argue you out of a record you have just read" in events)
+# It governs how a value is INTERPRETED, so it has to come after the pins that
+# produce the value rather than being buried among them.
+check("the date line sits after the numbered pins",
+      events.index("against today's date") > events.rindex("Eleven: "))
+
 print("\nthe assembled brief")
 check("brief is assembled in the documented order",
       brief.index(const.VOICE_BRIEF_ANSWER_SHAPE)
