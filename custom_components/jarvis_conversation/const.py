@@ -308,6 +308,8 @@ VOICE_BRIEF_PINNED_POWER: Final = (
     "ones reading on are the answer. Do not go by entity-id suffix, they vary. "
     "Name only the ones that came back on; if none is on, say nothing is "
     "flagged low. "
+    "If you give a number it must be the ones you then name — never a count on "
+    "its own, and never the same device twice to reach one. "
     "If one of these is genuinely missing or unavailable, say so; do not say the "
     "house has no such reading when you simply have not found it."
 )
@@ -505,7 +507,13 @@ VOICE_BRIEF_PINNED_EVENTS: Final = (
     "ago it was against today's date — if the date is today's, it happened "
     "today; if you are not certain what today's date is, give the date and "
     "time you read rather than how long ago it was; and never let that "
-    "arithmetic argue you out of a record you have just read."
+    "arithmetic argue you out of a record you have just read. "
+    "And read them before you answer. If any of them bears on what you were "
+    "asked — anything about today, what has happened, whether anything was "
+    "out of the ordinary — read it first, say what it shows, and only then "
+    "say what you cannot see. Never offer to read a record instead of reading "
+    "it, and never say you cannot tell while you can still name one you have "
+    "not looked at."
 )
 
 # DAV-36: a FOURTH pinned block, kept separate from the three above so it can be
