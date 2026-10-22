@@ -37,6 +37,7 @@ from .const import (
     VOICE_BRIEF_NO_INFERRED_EVENTS,
     VOICE_BRIEF_PINNED_EVENTS,
     VOICE_BRIEF_PINNED_FACTS,
+    VOICE_BRIEF_PINNED_NAMES,
     VOICE_BRIEF_PINNED_POWER,
 )
 from .speech import prepare_for_tts
@@ -457,6 +458,11 @@ class JarvisConversationEntity(conversation.ConversationEntity):
         # tests/test_voice_brief.py reads this append order out of the source, so
         # adding the constant without adding the line here fails the tests.
         parts.append(VOICE_BRIEF_PINNED_EVENTS)
+        # DAV-36. Wired in in the same commit that defines it, for the reason above.
+        # Last of the five because it is the narrowest: it corrects one reading that
+        # the other four would otherwise let through, rather than telling Jarvis
+        # where to look.
+        parts.append(VOICE_BRIEF_PINNED_NAMES)
         if user_input.extra_system_prompt:
             parts.append(user_input.extra_system_prompt)
         return " ".join(parts)

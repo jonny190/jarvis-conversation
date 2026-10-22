@@ -507,3 +507,59 @@ VOICE_BRIEF_PINNED_EVENTS: Final = (
     "time you read rather than how long ago it was; and never let that "
     "arithmetic argue you out of a record you have just read."
 )
+
+# DAV-36: a FOURTH pinned block, kept separate from the three above so it can be
+# judged -- or dropped -- on its own, which is the same reason pins four to seven
+# and eight to eleven live in blocks of their own.
+#
+# THE FAULT. DAV-33 report 6 §142, P15 "is the house ready for bed": Jarvis said
+# "THE BEDROOM WINDOWS ARE OPEN". `[measured]` at the time and again on
+# 2026-10-19 14:0x UTC against live HA state:
+#     binary_sensor.bedroom_windows_open   off     "Bedroom windows open"
+#     light.bedroom_windows                ON      "Bedroom Windows"   (a WLED strip)
+# Everything else in that answer was true. The one false clause is a lamp read as
+# a window, and it is live on the house right now -- the strip is on as I write.
+#
+# WHY A GENERAL CLAUSE IS EARNED HERE AND WAS NOT EARNED BEFORE. The standing rule
+# in this file is to pin the measured entity and not to generalise, because
+# generalising beyond the evidence is what cost me the 16 Oct run. So I counted
+# first. `[measured]` 2026-10-19 against all 6,047 entities, controllable domains
+# whose name reads as an opening and whose state is on/off:
+#     light.bedroom_windows            on    "Bedroom Windows"          WLED strip
+#     light.hallway_door               off   "Hallway Door"             lamp
+#     light.front_window               off   "Front Window"             lamp
+#     light.door                       on    "Roof Lights"              lamp
+#     switch.bedroom_radiator_open_window        off  TRV open-window setting
+#     switch.en_suit_radiator_window_detection   off  TRV window detection
+#     ...and seven more radiator open-window / window-detection switches.
+# Six distinct families across two domains, not one entity. A pin naming only the
+# bedroom strip would leave `switch.bedroom_radiator_open_window` free to produce
+# the identical sentence the moment a TRV sees a draught. So the block names the
+# measured one AND states the rule the measurement supports: openness is a
+# binary_sensor. That is a generalisation FROM the count, not past it.
+#
+# WHAT I DID NOT DO: propose renaming anything. `light.bedroom_windows` is the
+# owner's name for a strip that sits in the bedroom window, and it is a perfectly
+# good name for a lamp. The collision is Jarvis's problem to handle, not the
+# house's to work around. DAV-33 report 6 reported the naming and declined to
+# propose a change for the same reason; this keeps that posture.
+#
+# ON THE THIRD FAULT DAV-36 NAMED, which was N1 rather than P15. See the report:
+# `[measured]` the four ha_* tools cannot reach /api/history or /api/logbook, and
+# there is no input_datetime or counter in this house that records a door opening
+# (19 helpers and 2 counters, all listed). N1's current answer -- "both back doors
+# are closed at the moment, but I've no record of whether either was opened
+# earlier today" -- is true in both halves and is the best answer available. It
+# needs no fix. P15 is the third sentence that is actually saying something false.
+VOICE_BRIEF_PINNED_NAMES: Final = (
+    "One more, about a name rather than a reading. "
+    "Twelve: whether anything here is open or shut is a binary_sensor and "
+    "nothing else — for the bedroom windows that is "
+    "binary_sensor.bedroom_windows_open. A light or a switch can be named "
+    "after a door or a window just because of where it sits: "
+    "light.bedroom_windows is a lamp strip called \"Bedroom Windows\", and the "
+    "radiator switches ending _open_window or _window_detection are settings "
+    "on a valve. Either being on tells you about that device and nothing about "
+    "a window or a door. Never call anything open or shut on the strength of a "
+    "light, a switch or a setting."
+)

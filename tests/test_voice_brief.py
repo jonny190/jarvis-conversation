@@ -57,6 +57,7 @@ def render_room_unknown(language="en"):
         const.VOICE_BRIEF_PINNED_FACTS,
         const.VOICE_BRIEF_PINNED_POWER,
         const.VOICE_BRIEF_PINNED_EVENTS,
+        const.VOICE_BRIEF_PINNED_NAMES,
     ])
 
 
@@ -245,13 +246,64 @@ check("the date line forbids contradicting the record just read",
 check("the date line sits after the numbered pins",
       events.index("against today's date") > events.rindex("Eleven: "))
 
+print("\nthe pinned-name block (DAV-36 pin twelve, shipped on DAV-41)")
+# PIN TWELVE, 2026-10-19. The owner's decision: DAV-36 interaction 72b7263d
+# authorised the patch pass this came out of. P15 "is the house ready for bed"
+# said "THE BEDROOM WINDOWS ARE OPEN" while `[measured]`
+# binary_sensor.bedroom_windows_open was off and light.bedroom_windows -- a WLED
+# strip named after where it sits -- was on. One false clause in an otherwise
+# true answer, and a lamp read as a window.
+#
+# WHY IT IS IN THE REPO RATHER THAN ON THE HOUSE. It was applied by hand to the
+# LXC on 19 Oct and never committed. On 21 Oct 17:45 HACS pulled 37c7102 over
+# the top of it -- this integration is tracked by commit -- and the hand-placed
+# copy went, pin twelve with it, four minutes before HA restarted. That is the
+# whole argument for this file existing: a brief that is not in the repo is a
+# brief that survives until the next update and no longer. These assertions are
+# what makes losing it again a test failure rather than a silent regression.
+names = const.VOICE_BRIEF_PINNED_NAMES
+# The measured entity. Without it the block is a rule with no referent.
+check("pins binary_sensor.bedroom_windows_open",
+      "binary_sensor.bedroom_windows_open" in names)
+# The collision itself. Naming the lamp is what lets the rule be checked against
+# the one reading that actually went wrong.
+check("names the lamp that caused the false reading",
+      "light.bedroom_windows" in names)
+# `[measured]` 2026-10-19: six distinct families across two domains could produce
+# the identical sentence, nine of them radiator settings. A pin naming only the
+# bedroom strip leaves every TRV free to say "the window is open" on a draught,
+# so the suffixes have to be in the block, not just in the comment above it.
+check("covers the radiator open-window settings too",
+      "_open_window" in names and "_window_detection" in names)
+# The generalisation the count earned: openness is a binary_sensor and nothing
+# else. This is the clause that does the work on entities nobody has measured.
+check("states the rule, not just the one entity",
+      "binary_sensor and" in names and "nothing else" in names)
+check("forbids inferring openness from a light, a switch or a setting",
+      "never call anything open or shut" in names.lower()
+      and all(w in names for w in ("light", "switch", "setting")))
+# WHAT THE BLOCK DELIBERATELY DOES NOT DO: propose renaming the strip.
+# light.bedroom_windows is the owner's name for a lamp in a window and it is a
+# good name for a lamp. The collision is Jarvis's to handle, not the house's to
+# work around, and DAV-33 report 6 took the same posture. If a later edit starts
+# asking the house to rename things, this fails and says so.
+check("does not ask the house to rename anything",
+      "rename" not in names.lower())
+# Same opener-counts-its-own-pins check the event block carries, for the same
+# reason: the sentence has been wrong-by-one twice over there.
+_names_pins = re.findall(r"\b(Twelve|Thirteen|Fourteen):", names)
+check("the block's opening sentence counts its own pins correctly",
+      len(_names_pins) == 1 and names.startswith("One more"),
+      f"{len(_names_pins)} pins, opener says {names.split(',')[0]!r}")
+
 print("\nthe assembled brief")
 check("brief is assembled in the documented order",
       brief.index(const.VOICE_BRIEF_ANSWER_SHAPE)
       < brief.index(const.VOICE_BRIEF_NO_INFERRED_EVENTS)
       < brief.index(const.VOICE_BRIEF_PINNED_FACTS)
       < brief.index(const.VOICE_BRIEF_PINNED_POWER)
-      < brief.index(const.VOICE_BRIEF_PINNED_EVENTS))
+      < brief.index(const.VOICE_BRIEF_PINNED_EVENTS)
+      < brief.index(const.VOICE_BRIEF_PINNED_NAMES))
 # THE DRIFT GUARD. render_room_unknown() above is a COPY of the assembly in
 # conversation.py, and on 19 Oct the copy lied: VOICE_BRIEF_PINNED_POWER had been
 # in const.py since 16 Oct, was in the probe harness, and was never wired into the
@@ -263,7 +315,7 @@ _src = (pathlib.Path(__file__).resolve().parents[1]
 _shipped = re.findall(r"parts\.append\((VOICE_BRIEF_[A-Z_]+)\)", _src)
 _tested = ["VOICE_BRIEF_ANSWER_SHAPE", "VOICE_BRIEF_NO_INFERRED_EVENTS",
            "VOICE_BRIEF_PINNED_FACTS", "VOICE_BRIEF_PINNED_POWER",
-           "VOICE_BRIEF_PINNED_EVENTS"]
+           "VOICE_BRIEF_PINNED_EVENTS", "VOICE_BRIEF_PINNED_NAMES"]
 check("the tested brief is the brief conversation.py actually sends",
       _shipped == _tested, f"conversation.py appends {_shipped}, tests render {_tested}")
 # Standing context on a latency-critical path. At DAV-29's measured 14.2 ms per
@@ -375,7 +427,7 @@ for _i, (_w, _start) in enumerate(_pin_spans):
     _end = _pin_spans[_i + 1][1] - len(_pin_spans[_i + 1][0]) - 2 if _i + 1 < len(_pin_spans) else len(brief)
     _pin_text[_w] = brief[_start:_end]
 check("the pins are the pins I think they are",
-      [w for w, _ in _pin_spans] == list(_PIN_WORDS[:11]),
+      [w for w, _ in _pin_spans] == list(_PIN_WORDS[:12]),
       f"found {[w for w, _ in _pin_spans]}")
 _prose = [w for w, t in _pin_text.items() if not _ADDRESSABLE.search(t)]
 check("every numbered pin names something addressable — pins, not prose",
