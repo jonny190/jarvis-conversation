@@ -57,6 +57,7 @@ def render_room_unknown(language="en"):
         const.VOICE_BRIEF_PINNED_FACTS,
         const.VOICE_BRIEF_PINNED_POWER,
         const.VOICE_BRIEF_PINNED_EVENTS,
+        const.VOICE_BRIEF_PINNED_NAMES,
     ])
 
 
@@ -139,6 +140,35 @@ check("pin seven forbids naming devices the call did not return",
       "only the ones that came back on" in power)
 check("pin seven says what to do when nothing is flagged",
       "nothing is" in power and "flagged low" in power)
+# THE COUNT CLAUSE, 2026-10-19, written under DAV-36's patch pass (interaction
+# 72b7263d) and restored here on DAV-41 at the owner's direction. It was applied
+# by hand to the LXC, never committed, and went when HACS pulled 37c7102 over the
+# top on 21 Oct -- the same way pin twelve went.
+#
+# The fault it is aimed at: P17 "anything I should know about" has answered with
+# a number that does not match the devices it then names, in BOTH directions --
+# "five sensors are flagging low batteries" naming four, and "three batteries"
+# naming three while four flags were on. `[measured]` four flags on each time.
+#
+# WHAT THIS CLAUSE IS NOT. It is not a fix for P17 and must not be read as one.
+# It was live on the house for the whole 19 Oct re-measure, and P17 still gave a
+# false count in two runs of four. DAV-41 records P17 as unfixed and that stands;
+# this clause is being restored because it was authorised and lost, not because
+# it works. A real P17 fix needs its own ticket and its own diagnosis.
+check("pin seven ties any number it gives to the devices it names",
+      "it must be the ones you then name" in power,
+      "the observed fault is a count that disagrees with the list beside it")
+check("pin seven forbids a bare count with no names",
+      "never a count on its own" in power)
+# The third clause, and the one with no observation behind it: padding the list
+# with a device the call did not return is MEASURED (P13's 08:08 answer invented
+# En-Suit Presence), and "only the ones that came back on" above covers that.
+# Counting one device twice is the other arithmetic route to the same false
+# number and has NOT been observed. It is asserted because the authorised text
+# says it, not because it is evidenced -- saying so here so nobody later reads
+# this check as a record of a fault we saw.
+check("pin seven forbids reaching a count by counting one device twice",
+      "never the same device twice" in power)
 
 print("\nthe pinned event-record block (DAV-33, pins eight, nine and ten)")
 events = const.VOICE_BRIEF_PINNED_EVENTS
@@ -245,13 +275,97 @@ check("the date line forbids contradicting the record just read",
 check("the date line sits after the numbered pins",
       events.index("against today's date") > events.rindex("Eleven: "))
 
+# THE READ-FIRST CLAUSE, 2026-10-19, written under DAV-36's patch pass and
+# restored here on DAV-41 at the owner's direction. Hand-applied to the LXC,
+# never committed, lost when HACS pulled 37c7102 over the top on 21 Oct -- the
+# same way pin twelve and pin seven's count clause went.
+#
+# Its target is DAV-36's second fault, P20 "did anything unusual happen today",
+# which oscillated refusal -> good answer -> partial -> refusal across runs while
+# the records pins eight to eleven name sat there readable. The clause addresses
+# the refusal half: the pins already say WHICH records exist, and this says to
+# read them before saying you cannot tell.
+#
+# NOT MEASURED. The re-measure on DAV-41 was aimed at P17 and pin thirteen; P20
+# was not re-run with this clause live, so nothing here claims it works. It is
+# restored because it was authorised and lost. One assertion per clause, same as
+# the date line above, so a later trim that drops one fails here.
+check("the event block says to read the records before answering",
+      "read them before you answer" in events)
+check("it forbids offering to read a record instead of reading it",
+      "offer to read a record instead of reading it" in events)
+# The clause that bounds the refusal rule rather than adding a record. The
+# refusal rule says "cannot tell is a correct answer" and that is still true --
+# but only once the named records have actually been looked at, or the rule
+# licenses the exact refusal P20 kept falling back to. (The carve-out itself is
+# already asserted up in the refusal-rule section; one check, not two.)
+check("it forbids refusing while a named record is still unread",
+      "cannot tell while you can still name one you have not looked at" in events)
+# Order matters for the same reason the date line's does: it is a rule about what
+# to do with the records, so it has to come after the pins that name them.
+check("the read-first clause sits after the numbered pins",
+      "read them before you answer" in events
+      and events.index("read them before you answer") > events.rindex("Eleven: "),
+      "guarded so a deleted clause fails the check above instead of crashing here")
+
+print("\nthe pinned-name block (DAV-36 pin twelve, shipped on DAV-41)")
+# PIN TWELVE, 2026-10-19. The owner's decision: DAV-36 interaction 72b7263d
+# authorised the patch pass this came out of. P15 "is the house ready for bed"
+# said "THE BEDROOM WINDOWS ARE OPEN" while `[measured]`
+# binary_sensor.bedroom_windows_open was off and light.bedroom_windows -- a WLED
+# strip named after where it sits -- was on. One false clause in an otherwise
+# true answer, and a lamp read as a window.
+#
+# WHY IT IS IN THE REPO RATHER THAN ON THE HOUSE. It was applied by hand to the
+# LXC on 19 Oct and never committed. On 21 Oct 17:45 HACS pulled 37c7102 over
+# the top of it -- this integration is tracked by commit -- and the hand-placed
+# copy went, pin twelve with it, four minutes before HA restarted. That is the
+# whole argument for this file existing: a brief that is not in the repo is a
+# brief that survives until the next update and no longer. These assertions are
+# what makes losing it again a test failure rather than a silent regression.
+names = const.VOICE_BRIEF_PINNED_NAMES
+# The measured entity. Without it the block is a rule with no referent.
+check("pins binary_sensor.bedroom_windows_open",
+      "binary_sensor.bedroom_windows_open" in names)
+# The collision itself. Naming the lamp is what lets the rule be checked against
+# the one reading that actually went wrong.
+check("names the lamp that caused the false reading",
+      "light.bedroom_windows" in names)
+# `[measured]` 2026-10-19: six distinct families across two domains could produce
+# the identical sentence, nine of them radiator settings. A pin naming only the
+# bedroom strip leaves every TRV free to say "the window is open" on a draught,
+# so the suffixes have to be in the block, not just in the comment above it.
+check("covers the radiator open-window settings too",
+      "_open_window" in names and "_window_detection" in names)
+# The generalisation the count earned: openness is a binary_sensor and nothing
+# else. This is the clause that does the work on entities nobody has measured.
+check("states the rule, not just the one entity",
+      "binary_sensor and" in names and "nothing else" in names)
+check("forbids inferring openness from a light, a switch or a setting",
+      "never call anything open or shut" in names.lower()
+      and all(w in names for w in ("light", "switch", "setting")))
+# WHAT THE BLOCK DELIBERATELY DOES NOT DO: propose renaming the strip.
+# light.bedroom_windows is the owner's name for a lamp in a window and it is a
+# good name for a lamp. The collision is Jarvis's to handle, not the house's to
+# work around, and DAV-33 report 6 took the same posture. If a later edit starts
+# asking the house to rename things, this fails and says so.
+check("does not ask the house to rename anything",
+      "rename" not in names.lower())
+# Same opener-counts-its-own-pins check the event block carries, for the same
+# reason: the sentence has been wrong-by-one twice over there.
+_names_pins = re.findall(r"\b(Twelve|Thirteen|Fourteen):", names)
+check("the block's opening sentence counts its own pins correctly",
+      len(_names_pins) == 1 and names.startswith("One more"),
+      f"{len(_names_pins)} pins, opener says {names.split(',')[0]!r}")
+
 print("\nthe assembled brief")
 check("brief is assembled in the documented order",
       brief.index(const.VOICE_BRIEF_ANSWER_SHAPE)
       < brief.index(const.VOICE_BRIEF_NO_INFERRED_EVENTS)
       < brief.index(const.VOICE_BRIEF_PINNED_FACTS)
       < brief.index(const.VOICE_BRIEF_PINNED_POWER)
-      < brief.index(const.VOICE_BRIEF_PINNED_EVENTS))
+      < brief.index(const.VOICE_BRIEF_PINNED_EVENTS)
+      < brief.index(const.VOICE_BRIEF_PINNED_NAMES))
 # THE DRIFT GUARD. render_room_unknown() above is a COPY of the assembly in
 # conversation.py, and on 19 Oct the copy lied: VOICE_BRIEF_PINNED_POWER had been
 # in const.py since 16 Oct, was in the probe harness, and was never wired into the
@@ -263,7 +377,7 @@ _src = (pathlib.Path(__file__).resolve().parents[1]
 _shipped = re.findall(r"parts\.append\((VOICE_BRIEF_[A-Z_]+)\)", _src)
 _tested = ["VOICE_BRIEF_ANSWER_SHAPE", "VOICE_BRIEF_NO_INFERRED_EVENTS",
            "VOICE_BRIEF_PINNED_FACTS", "VOICE_BRIEF_PINNED_POWER",
-           "VOICE_BRIEF_PINNED_EVENTS"]
+           "VOICE_BRIEF_PINNED_EVENTS", "VOICE_BRIEF_PINNED_NAMES"]
 check("the tested brief is the brief conversation.py actually sends",
       _shipped == _tested, f"conversation.py appends {_shipped}, tests render {_tested}")
 # Standing context on a latency-critical path. At DAV-29's measured 14.2 ms per
@@ -375,12 +489,47 @@ for _i, (_w, _start) in enumerate(_pin_spans):
     _end = _pin_spans[_i + 1][1] - len(_pin_spans[_i + 1][0]) - 2 if _i + 1 < len(_pin_spans) else len(brief)
     _pin_text[_w] = brief[_start:_end]
 check("the pins are the pins I think they are",
-      [w for w, _ in _pin_spans] == list(_PIN_WORDS[:11]),
+      [w for w, _ in _pin_spans] == list(_PIN_WORDS[:12]),
       f"found {[w for w, _ in _pin_spans]}")
 _prose = [w for w, t in _pin_text.items() if not _ADDRESSABLE.search(t)]
 check("every numbered pin names something addressable — pins, not prose",
       not _prose, f"prose-only pins: {_prose}")
-check("brief stays under the runaway backstop", len(brief) < 6000,
+#
+# ---------------------------------------------------------------------------
+# RAISED 6,000 -> 6,500 ON 2026-10-22, ON DAV-41, AND THE OWNER MOVED IT.
+#
+# What tripped it. Pin twelve alone put the brief at 5,905, 95 under the old
+# number, and the two restored clauses -- 129 chars on pin seven, 371 on the
+# event block -- took it to 6,405. The guard fired before the number moved,
+# which is the only reason this paragraph is honest: I did not get to choose
+# between raising it and noticing.
+#
+# WHY I DID NOT RAISE IT MYSELF. 6,000 was set three days ago by the same
+# reasoning that demoted the count from "the thing being argued about" to a
+# runaway backstop, and a backstop its own author widens to fit his own text is
+# the failure the 4,500 and 4,750 paragraphs above are a record of. So it went
+# to the owner as a decision with the arithmetic attached: either the clauses
+# fit under 6,000 or the number moves, and neither clause can be trimmed without
+# editing text he authorised. He answered `add-both` on card d9e1ef37 on 22 Oct
+# and chose to move it.
+#
+# THE COUNT, stated rather than waved away, because the paragraphs above keep
+# their own tally: by the old count this is the THIRD raise, and the 4,750
+# paragraph said the third should stop and reconsider the design instead. It
+# did -- on 19 Oct, at 4,892, and the reconsideration is the structural check
+# directly above this one. That is the guard now. This number is what is left
+# over after it, and the two things should not be confused: the structural check
+# is what would catch a knowledge base, and it passes on every pin here.
+#
+# 6,500 is the smallest round number the authorised text fits under: 6,405 with
+# 95 chars to spare, the same uncomfortable margin pin twelve had, so the next
+# addition trips this and gets argued about too.
+#
+# The cost: 6,500 chars is roughly 1,625 prompt tokens, about 23 ms at DAV-29's
+# measured 14.2 ms per 1,000, against a 12 s ceiling. Against the four measured
+# runs quoted above -- brief up 19%, p50 down 35% -- the character count is
+# still not the quantity that moves latency on this path.
+check("brief stays under the runaway backstop", len(brief) < 6500,
       f"{len(brief)} chars")
 check("no markdown leaked into a spoken-context prompt",
       not any(m in brief for m in ("```", "\n- ", "**")))
